@@ -12,8 +12,11 @@ node demo.js
 This generates vocab.json from corpus.txt.
 
 Encode: const tokenizer = new Tokenizer('vocab.json');
+
 console.log(tokenizer.encode("Hello world"));
+
 Decode: console.log(tokenizer.decode([4, 5]));
+
 Special Tokens
 <PAD> = Padding
 
@@ -30,4 +33,5 @@ Special Tokens
 node demo.js
 First run will create vocab.json, then encode & decode the sample text.
 Subsequent runs will reuse the existing vocab.
+
 
