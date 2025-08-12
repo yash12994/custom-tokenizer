@@ -26,3 +26,4 @@ console.log(tokenizer.decode([4, 5]));
 - <UNK> = Unknown token
 - <BOS> = Beginning of sentence
 - <EOS> = End of sentence
+
