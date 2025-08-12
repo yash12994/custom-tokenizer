@@ -1,0 +1,12 @@
+{
+  "name": "custom-tokenizer-js",
+  "version": "1.0.0",
+  "description": "A simple custom tokenizer in JavaScript for GenAI projects",
+  "main": "demo.js",
+  "scripts": {
+    "start": "node demo.js"
+  },
+  "keywords": ["tokenizer", "nlp", "genai", "javascript"],
+  "author": "",
+  "license": "MIT"
+}
