@@ -1,0 +1,92 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Tokenizer Demo</title>
+<style>
+body { font-family: system-ui, sans-serif; padding: 1rem; }
+textarea { width:100%; height:6rem; }
+#out { white-space: pre-wrap; background:#f6f6f6; padding:1rem; border-radius:6px; }
+</style>
+</head>
+<body>
+<h2>Tokenizer demo</h2>
+<p>Load `vocab.json` in same folder (trained using CLI) and paste text to encode/decode.</p>
+<input id="vocabFile" type="file" accept=".json"/>
+<br/><br/>
+<textarea id="text">Hello world, this is a demo!</textarea><br/>
+<button id="encode">Encode</button>
+<button id="decode">Decode last ids</button>
+<div id="out"></div>
+<script>
+let tokenizer = null;
+document.getElementById('vocabFile').addEventListener('change', async (e)=>{
+  const f = e.target.files[0];
+  const txt = await f.text();
+  const data = JSON.parse(txt);
+
+  tokenizer = {
+    separator: data.separator,
+    id2tok: data.id2tok,
+    vocab: {}
+  };
+  tokenizer.id2tok.forEach((t,i)=>tokenizer.vocab[t]=i);
+  document.getElementById('out').textContent = 'Vocab loaded: ' + tokenizer.id2tok.length + ' tokens';
+});
+
+function simpleWords(text) {
+  return text.toLowerCase().replace(/(\p{P})/gu,' $1 ').replace(/\s+/g,' ').trim().split(' ');
+}
+
+function encodeText(text) {
+  if (!tokenizer) return null;
+  const words = simpleWords(text);
+  const ids = [];
+  for (let w of words) {
+    let s = w.split('').concat([tokenizer.separator]).join('');
+    let i = 0;
+    while (i < s.length) {
+      let end = s.length;
+      let found = null;
+      while (end > i) {
+        const cand = s.slice(i,end);
+        if (cand in tokenizer.vocab) { found = cand; break; }
+        end--;
+      }
+      if (!found) { ids.push(tokenizer.vocab['<UNK>'] ?? 1); i++; }
+      else { ids.push(tokenizer.vocab[found]); i += found.length; }
+    }
+  }
+  return ids;
+}
+
+let lastIds = null;
+document.getElementById('encode').onclick = ()=>{
+  const text = document.getElementById('text').value;
+  const ids = encodeText(text);
+  lastIds = ids;
+  document.getElementById('out').textContent = 'IDs: ' + (ids ? ids.join(',') : 'no vocab loaded');
+};
+
+document.getElementById('decode').onclick = ()=>{
+  if (!tokenizer || !lastIds) return;
+  const toks = lastIds.map(i => tokenizer.id2tok[i] ?? '<UNK>');
+ 
+  const pieces = [];
+  let cur = '';
+  for (let t of toks) {
+    if (t === '<BOS>' || t === '<EOS>' || t === '<PAD>') continue;
+    if (t.endsWith(tokenizer.separator)) {
+      cur += t.slice(0,-tokenizer.separator.length);
+      pieces.push(cur);
+      cur = '';
+    } else {
+      cur += t;
+    }
+  }
+  if (cur) pieces.push(cur);
+  document.getElementById('out').textContent = 'Decoded: ' + pieces.join(' ');
+};
+</script>
+</body>
+</html>
