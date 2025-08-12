@@ -1,0 +1,3 @@
+Hello world from GenAI
+This is a simple tokenizer demo
+Tokenizer learns vocabulary from text
