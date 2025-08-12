@@ -1,62 +1,73 @@
-// tokenizer.js
+const fs = require('fs');
 
 class Tokenizer {
-    constructor() {
+    constructor(vocabFile) {
         this.vocab = {};
-        this.reverseVocab = {};
+        this.invVocab = {};
         this.specialTokens = {
-            PAD: "<PAD>",
-            UNK: "<UNK>",
-            SOS: "<SOS>",
-            EOS: "<EOS>"
+            PAD: '<PAD>',
+            UNK: '<UNK>',
+            BOS: '<BOS>',
+            EOS: '<EOS>'
         };
-        this._initSpecialTokens();
+
+        if (vocabFile && fs.existsSync(vocabFile)) {
+            this.vocab = JSON.parse(fs.readFileSync(vocabFile));
+            this.invVocab = Object.fromEntries(
+                Object.entries(this.vocab).map(([k, v]) => [v, k])
+            );
+        }
     }
 
-    _initSpecialTokens() {
+    buildVocabulary(corpusFile, vocabFile) {
+        if (!fs.existsSync(corpusFile)) {
+            throw new Error(`Corpus file "${corpusFile}" not found.`);
+        }
+
+        const text = fs.readFileSync(corpusFile, 'utf-8');
+        const words = text.split(/\s+/);
+        const uniqueWords = [...new Set(words)];
+
+        let vocab = {};
         let id = 0;
-        for (let token of Object.values(this.specialTokens)) {
-            this.vocab[token] = id;
-            this.reverseVocab[id] = token;
-            id++;
-        }
-    }
 
-    train(corpus) {
-        let words = corpus.split(/\s+/);
-        let id = Object.keys(this.vocab).length;
-        for (let word of words) {
-            if (!this.vocab.hasOwnProperty(word)) {
-                this.vocab[word] = id;
-                this.reverseVocab[id] = word;
-                id++;
-            }
+        // Add special tokens first
+        for (let token of Object.values(this.specialTokens)) {
+            vocab[token] = id++;
         }
+
+        // Add unique words
+        uniqueWords.forEach(word => {
+            if (!vocab[word]) {
+                vocab[word] = id++;
+            }
+        });
+
+        fs.writeFileSync(vocabFile, JSON.stringify(vocab, null, 2));
+        console.log(`Vocabulary built and saved to ${vocabFile}`);
     }
 
     encode(text) {
-        let words = text.split(/\s+/);
-        let tokens = [this.vocab[this.specialTokens.SOS]];
-        for (let word of words) {
-            tokens.push(
-                this.vocab.hasOwnProperty(word)
-                    ? this.vocab[word]
-                    : this.vocab[this.specialTokens.UNK]
-            );
+        if (!this.vocab || Object.keys(this.vocab).length === 0) {
+            throw new Error("Vocabulary is empty. Build or load vocab first.");
         }
-        tokens.push(this.vocab[this.specialTokens.EOS]);
-        return tokens;
+
+        const tokens = text.split(/\s+/);
+        return [this.vocab[this.specialTokens.BOS], 
+            ...tokens.map(t => this.vocab[t] ?? this.vocab[this.specialTokens.UNK]),
+            this.vocab[this.specialTokens.EOS]
+        ];
     }
 
     decode(tokenIds) {
-        let words = [];
-        for (let id of tokenIds) {
-            let word = this.reverseVocab[id] || this.specialTokens.UNK;
-            if (![this.specialTokens.SOS, this.specialTokens.EOS, this.specialTokens.PAD].includes(word)) {
-                words.push(word);
-            }
+        if (!this.invVocab || Object.keys(this.invVocab).length === 0) {
+            throw new Error("Inverse vocabulary is empty.");
         }
-        return words.join(" ");
+
+        return tokenIds
+            .map(id => this.invVocab[id] ?? this.specialTokens.UNK)
+            .filter(tok => !Object.values(this.specialTokens).includes(tok))
+            .join(' ');
     }
 }
 
