@@ -35,7 +35,7 @@ Download & install from [https://nodejs.org](https://nodejs.org).
 
 ### 2️⃣ Clone the Repository
 
-git clone https://github.com/your-username/custom-tokenizer.git
+(https://github.com/yash12994/custom-tokenizer.git)
 cd custom-tokenizer
 
 3️⃣ Initialize Project
@@ -76,6 +76,7 @@ Generated vocab.json
   "tokenizer": 9,
   "demo": 10
 }
+
 
 
 
